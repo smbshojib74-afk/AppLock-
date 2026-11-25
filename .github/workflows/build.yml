@@ -20,19 +20,22 @@ jobs:
         run: |
           mv "AppLock Engine Source zip" source.zip
           unzip -o source.zip -d app_src
-          ls app_src
-      - name: Install dependencies
+          ls -R app_src | head -n 200
+      - name: Install and Build APK
         run: |
           cd app_src
-          PROJECT=$(find . -maxdepth 3 -name "package.json" | head -n 1 | xargs dirname)
-          echo "Project in $PROJECT"
-          echo "PROJECT_DIR=$PROJECT" >> $GITHUB_ENV
-          cd "$PROJECT"
+          ROOT=$(find . -name "package.json" -not -path "*/node_modules/*" | head -n 1 | xargs dirname)
+          echo "Found project in: $ROOT"
+          if [ -z "$ROOT" ]; then
+            echo "package.json NOT FOUND"
+            ls -R
+            exit 1
+          fi
+          cd "$ROOT"
+          pwd
+          ls -la
           npm install
           npx cap sync android || true
-      - name: Build APK
-        run: |
-          cd app_src/$PROJECT_DIR
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
