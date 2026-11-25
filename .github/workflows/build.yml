@@ -1,10 +1,12 @@
-name: Build APK
+name: Build AAR
 on:
   push:
   workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v5
       - name: Set up JDK 17
@@ -16,21 +18,20 @@ jobs:
         run: |
           mv "AppLock Engine Source zip" source.zip
           unzip -o source.zip -d app_src
-      - name: Build All
+      - name: Build AAR
         run: |
           cd app_src/AppLock_Engine
           chmod +x gradlew
           sed -i '/applock-capacitor/d' settings.gradle.kts
           ./gradlew assembleDebug --stacktrace
-      - name: Find All Outputs
+      - name: Find AAR
         run: |
-          echo "=== ALL APK / AAR ==="
-          find app_src -name "*.apk" -o -name "*.aab" -o -name "*.aar"
-          echo "=== ALL OUTPUTS ==="
-          ls -R app_src/AppLock_Engine/app/build/outputs/ || true
-          ls -R app_src/AppLock_Engine/applock/build/outputs/ || true
-      - name: Upload Everything
-        uses: actions/upload-artifact@v5
+          find app_src -name "*.aar"
+          cp app_src/AppLock_Engine/applock/build/outputs/aar/applock-debug.aar ./applock-debug.aar
+          ls -lh ./applock-debug.aar
+      - name: Make Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: AppLock-Build
-          path: app_src/AppLock_Engine/**/build/outputs/**/*
+          tag_name: v1.0.${{ github.run_number }}
+          name: AppLock Test ${{ github.run_number }}
+          files: applock-debug.aar
