@@ -4,61 +4,49 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "AppLock_Engine_Source.zip"
+      - "*.zip"
 
 permissions:
-  contents: write   # needed to create the GitHub Release
+  contents: write
 
 jobs:
-  build-aar:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo (contains AppLock_Engine_Source.zip at the root)
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - name: Unzip source
-        run: |
-          unzip -q AppLock_Engine_Source.zip -d src_unzipped
-          ls src_unzipped/AppLock_Engine
-          chmod +x src_unzipped/AppLock_Engine/gradlew
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Accept Android SDK licenses and install platform 36
+      - name: Unzip source
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+          ZIP=$(ls *.zip | head -n 1)
+          echo "Using $ZIP"
+          unzip -q "$ZIP" -d app_src
+          chmod +x app_src/AppLock_Engine/gradlew
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      # Only the :applock library is built. :applock-capacitor and the :app demo are NOT built.
-      # The library has two flavors (play / full), so assembleDebug is split per flavor.
-      - name: Build AAR (play + full, debug)
-        working-directory: src_unzipped/AppLock_Engine
+      - name: Build AAR (only :applock, no capacitor, no demo app)
+        working-directory: app_src/AppLock_Engine
         run: ./gradlew :applock:assemblePlayDebug :applock:assembleFullDebug --stacktrace
 
-      - name: Find and rename AARs
+      - name: Find AAR
         run: |
           mkdir -p out
-          PLAY=$(find src_unzipped/AppLock_Engine/applock/build/outputs/aar -name "*play*debug*.aar" | head -n 1)
-          FULL=$(find src_unzipped/AppLock_Engine/applock/build/outputs/aar -name "*full*debug*.aar" | head -n 1)
-          echo "play: $PLAY"; echo "full: $FULL"
-          test -f "$PLAY" && test -f "$FULL"
-          cp "$PLAY" out/applock-debug.aar
-          cp "$FULL" out/applock-full-debug.aar
+          D=app_src/AppLock_Engine/applock/build/outputs/aar
+          ls -l "$D"
+          cp "$D/applock-play-debug.aar" out/applock-debug.aar
+          cp "$D/applock-full-debug.aar" out/applock-full-debug.aar
           ls -l out
 
-      - name: Upload to GitHub Release
+      - name: Make Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="applock-debug-${{ github.run_number }}"
-          gh release create "$TAG" out/applock-debug.aar out/applock-full-debug.aar \
+          gh release create "applock-debug-${{ github.run_number }}" \
+            out/applock-debug.aar out/applock-full-debug.aar \
             --title "AppLock debug AAR #${{ github.run_number }}" \
-            --notes "Debug AAR build. applock-debug.aar = play flavor (no Accessibility). applock-full-debug.aar = full flavor (optional Fast Mode). Not device-tested." \
+            --notes "applock-debug.aar = play flavor. applock-full-debug.aar = full flavor (optional Fast Mode). Debug build, not device-tested." \
             --prerelease
+            
