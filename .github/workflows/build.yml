@@ -1,0 +1,31 @@
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Unzip source
+        run: |
+          unzip -o AppLock_Engine_Source.zip -d app_src
+          ls -R app_src | head -n 100
+      - name: Build APK
+        run: |
+          cd app_src
+          PROJECT=$(find . -maxdepth 3 -name "gradlew" | head -n 1 | xargs dirname)
+          echo "Project in $PROJECT"
+          cd "$PROJECT"
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AppLock-APK
+          path: "**/app/build/outputs/apk/debug/*.apk"
