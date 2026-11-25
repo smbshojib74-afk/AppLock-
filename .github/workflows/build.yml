@@ -6,9 +6,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -16,17 +16,21 @@ jobs:
         run: |
           mv "AppLock Engine Source zip" source.zip
           unzip -o source.zip -d app_src
-      - name: Build APK without Capacitor
+      - name: Build All
         run: |
           cd app_src/AppLock_Engine
           chmod +x gradlew
           sed -i '/applock-capacitor/d' settings.gradle.kts
-          ./gradlew :app:assembleDebug --stacktrace
-      - name: Find APK
+          ./gradlew assembleDebug --stacktrace
+      - name: Find All Outputs
         run: |
+          echo "=== ALL APK / AAR ==="
           find app_src -name "*.apk" -o -name "*.aab" -o -name "*.aar"
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+          echo "=== ALL OUTPUTS ==="
+          ls -R app_src/AppLock_Engine/app/build/outputs/ || true
+          ls -R app_src/AppLock_Engine/applock/build/outputs/ || true
+      - name: Upload Everything
+        uses: actions/upload-artifact@v5
         with:
-          name: AppLock-APK
-          path: app_src/AppLock_Engine/app/build/outputs/apk/debug/*.apk
+          name: AppLock-Build
+          path: app_src/AppLock_Engine/**/build/outputs/**/*
