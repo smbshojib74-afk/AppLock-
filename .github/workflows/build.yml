@@ -49,3 +49,4 @@ jobs:
             --title "AppLock debug AAR #${{ github.run_number }}" \
             --notes "applock-debug.aar = play flavor. applock-full-debug.aar = full flavor (optional Fast Mode). Debug build, not device-tested." \
             --prerelease
+            
