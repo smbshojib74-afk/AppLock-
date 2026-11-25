@@ -12,18 +12,28 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - name: Unzip source
         run: |
-          ls -la
           mv "AppLock Engine Source zip" source.zip
           unzip -o source.zip -d app_src
-          ls -R app_src | head -n 100
-      - name: Build APK
+          ls app_src
+      - name: Install dependencies
         run: |
           cd app_src
-          PROJECT=$(find . -maxdepth 3 -name "gradlew" | head -n 1 | xargs dirname)
+          PROJECT=$(find . -maxdepth 3 -name "package.json" | head -n 1 | xargs dirname)
           echo "Project in $PROJECT"
+          echo "PROJECT_DIR=$PROJECT" >> $GITHUB_ENV
           cd "$PROJECT"
+          npm install
+          npx cap sync android || true
+      - name: Build APK
+        run: |
+          cd app_src/$PROJECT_DIR
+          cd android
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
       - name: Upload APK
