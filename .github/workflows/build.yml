@@ -12,31 +12,14 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Set up Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
       - name: Unzip source
         run: |
           mv "AppLock Engine Source zip" source.zip
           unzip -o source.zip -d app_src
-          ls -R app_src | head -n 200
-      - name: Install and Build APK
+          ls -R app_src/AppLock_Engine | head -n 50
+      - name: Build APK
         run: |
-          cd app_src
-          ROOT=$(find . -name "package.json" -not -path "*/node_modules/*" | head -n 1 | xargs dirname)
-          echo "Found project in: $ROOT"
-          if [ -z "$ROOT" ]; then
-            echo "package.json NOT FOUND"
-            ls -R
-            exit 1
-          fi
-          cd "$ROOT"
-          pwd
-          ls -la
-          npm install
-          npx cap sync android || true
-          cd android
+          cd app_src/AppLock_Engine
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
       - name: Upload APK
