@@ -16,17 +16,17 @@ jobs:
         run: |
           mv "AppLock Engine Source zip" source.zip
           unzip -o source.zip -d app_src
-          cat app_src/AppLock_Engine/settings.gradle.kts
       - name: Build APK without Capacitor
         run: |
           cd app_src/AppLock_Engine
           chmod +x gradlew
-          # settings থেকে capacitor মডিউল বাদ দাও
           sed -i '/applock-capacitor/d' settings.gradle.kts
-          cat settings.gradle.kts
           ./gradlew :app:assembleDebug --stacktrace
+      - name: Find APK
+        run: |
+          find app_src -name "*.apk" -o -name "*.aab" -o -name "*.aar"
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: AppLock-APK
-          path: "**/app/build/outputs/apk/debug/*.apk"
+          path: app_src/AppLock_Engine/app/build/outputs/apk/debug/*.apk
